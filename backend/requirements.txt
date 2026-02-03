@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic-settings
+langchain
+psycopg2-binary
+websockets
+httpx
+pytest
+openai
+anthropic
