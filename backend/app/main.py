@@ -28,6 +28,7 @@ agent = ReasoningAgent(bridge)
 
 @app.on_event("startup")
 async def startup_event():
+    """Log startup configuration details."""
     logger.info("🧞 SQL Genie backend starting...")
     logger.info(f"   Database: {settings.database_url}")
     logger.info(f"   CORS origins: {settings.allowed_origins}")
@@ -36,19 +37,23 @@ async def startup_event():
 
 @app.get("/health")
 async def health() -> dict:
+    """Health check endpoint for uptime monitoring."""
     return {"status": "ok"}
 
 
 @app.get("/schema")
 async def schema() -> dict:
+    """Expose the database schema for the UI/agent."""
     return bridge.get_schema_map()
 
 
 @app.websocket("/ws/chat")
 async def chat(websocket: WebSocket) -> None:
+    """Handle a streaming chat session over WebSocket."""
     await websocket.accept()
     try:
         while True:
+            # Receive a user message, stream tokens back, then mark end of response
             user_message = await websocket.receive_text()
             async for token in agent.astream_chat(user_message):
                 await websocket.send_text(token)

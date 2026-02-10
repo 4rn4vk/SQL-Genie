@@ -16,12 +16,12 @@ class ReasoningAgent:
         self.llm_service = LLMService()
 
     async def astream_chat(self, message: str) -> AsyncGenerator[str, None]:
-        """Process user message and stream response."""
+        """Process a user message and stream step-by-step responses."""
         yield f"🤔 Analyzing: '{message}'\n\n"
         await asyncio.sleep(0.1)
         
         try:
-            # Get database schema
+            # Get database schema for context
             schema = self.bridge.get_schema_map()
             tables = ", ".join(schema.get("tables", {}).keys()) or "(no tables)"
             
@@ -29,6 +29,7 @@ class ReasoningAgent:
             yield f"📋 Tables: {tables}\n\n"
             await asyncio.sleep(0.1)
             
+            # Short-circuit when no LLM is configured
             if not self.llm_service.is_available():
                 yield "⚠️ LLM not configured. Please add your API key to .env:\n"
                 yield "1. Copy .env.example to .env\n"
@@ -36,7 +37,7 @@ class ReasoningAgent:
                 yield "3. Restart the backend\n"
                 return
             
-            # Generate SQL using LLM
+            # Generate SQL using the configured LLM
             yield "🔮 Generating SQL query...\n\n"
             sql_query = ""
             async for token in self.llm_service.generate_sql_streaming(message, schema):
@@ -45,12 +46,12 @@ class ReasoningAgent:
             
             sql_query = sql_query.strip()
             
-            # Check if it's a valid SELECT query
+            # Enforce read-only safety: only SELECT queries are executed
             if not sql_query.lower().startswith("select"):
                 yield "\n\n⚠️ Not a SELECT query - execution skipped for safety."
                 return
             
-            # Execute the query
+            # Execute the query and stream formatted results
             yield "\n\n⚡ Executing query...\n"
             await asyncio.sleep(0.2)
             

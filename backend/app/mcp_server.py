@@ -22,6 +22,7 @@ class MCPDatabaseBridge:
         return self._engine
 
     def get_schema_map(self) -> dict:
+        """Inspect the database and return a simple schema map."""
         inspector = inspect(self.engine)
         tables: dict[str, list[dict]] = {}
         for table_name in inspector.get_table_names():
@@ -32,6 +33,7 @@ class MCPDatabaseBridge:
         return {"dialect": self.dialect, "tables": tables}
 
     def execute_read_query(self, query: str) -> list[dict]:
+        """Execute a read-only SELECT query and return rows as dictionaries."""
         normalized = query.strip().lower()
         if not normalized.startswith("select"):
             raise ValueError("Only SELECT statements are allowed.")
