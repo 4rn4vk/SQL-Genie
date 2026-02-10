@@ -52,4 +52,5 @@ pytest
 ## Environment
 - `DATABASE_URL` should point at your Postgres instance (docker-compose provides one at `postgresql://postgres:postgres@db:5432/sql_genie`).
 - `OPENAI_API_KEY` optional placeholder; wire into the agent when adding a real LLM.
+- The LLM API key entries in `.env` are empty by default. Fill in the appropriate key (OpenAI or Anthropic) to make LLMs accessible.
 - `ALLOWED_ORIGINS` comma-separated origins for CORS.
