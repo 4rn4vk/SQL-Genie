@@ -1,9 +1,14 @@
 fastapi
 uvicorn[standard]
-sqlalchemy
+sqlalchemy>=2.0.30
 pydantic-settings
 langchain
+# PostgreSQL
 psycopg2-binary
+# DuckDB
+duckdb
+duckdb-engine
+# SQLite is part of Python's stdlib — no package needed
 websockets
 httpx
 pytest

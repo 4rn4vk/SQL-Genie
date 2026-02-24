@@ -1,7 +1,12 @@
 __pycache__/
 .env
+*.env
 .venv/
 node_modules/
 dist/
 frontend/node_modules/
 frontend/dist/
+
+# Local database files — do not commit
+*.db
+*.duckdb

@@ -1,81 +1,129 @@
-# SQL Genie - Setup Complete! 🎉
+# SQL Genie - Setup Guide
 
-## ✅ What's Ready
-- Backend with FastAPI + WebSocket streaming
-- MCP Database Bridge for PostgreSQL
-- LLM integration (OpenAI & Anthropic support)
+## What's Ready
+- Backend: FastAPI + WebSocket streaming
+- MCP Database Bridge with dialect-aware support for **DuckDB, SQLite, and PostgreSQL**
+- LLM integration (OpenAI & Anthropic)
 - React frontend with real-time chat
-- Sample database with customers and orders
+- Sample data scripts for all three databases
 
-## 🔑 Next Steps
+---
 
-### 1. Add your LLM API Key
-Edit `.env` file and uncomment one of these:
+## Step 1 — Choose a Database
 
-**For OpenAI:**
-```bash
-OPENAI_API_KEY=sk-...
+Edit `.env` and set `DATABASE_URL` to one of the following:
+
+```dotenv
+# DuckDB (default — best for local analytics)
+DATABASE_URL=duckdb:///./sql_genie.duckdb
+
+# SQLite (zero-install, great for demos)
+DATABASE_URL=sqlite:///./sql_genie.db
+
+# PostgreSQL (production / multi-user)
+DATABASE_URL=postgresql://user:password@host:5432/dbname
 ```
-Get your key: https://platform.openai.com/api-keys
 
-**For Anthropic:**
-```bash
+The dialect is auto-detected — no other changes needed.
+
+---
+
+## Step 2 — Seed Sample Data
+
+**DuckDB:**
+```powershell
+cd backend
+python seed_duckdb.py
+```
+
+**SQLite:**
+```powershell
+python -c "import sqlite3, pathlib; conn=sqlite3.connect('sql_genie.db'); conn.executescript(pathlib.Path('../sample_data_sqlite.sql').read_text()); conn.close(); print('Done')"
+```
+
+**PostgreSQL:**
+```powershell
+docker compose --profile postgres up -d db
+# wait a few seconds, then:
+psql postgresql://postgres:postgres@localhost:5432/sql_genie -f sample_data.sql
+```
+
+You can also skip seeding entirely and point `DATABASE_URL` at any existing database file or server.
+
+---
+
+## Step 3 — Add Your LLM Key
+
+In `.env`, set one of:
+
+```dotenv
+# Anthropic (Claude)
 LLM_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sk-ant-...
+
+# OpenAI
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-...
 ```
-Get your key: https://console.anthropic.com/
 
-### 2. Restart the backend
-The backend auto-reloads, but to pick up .env changes:
-- Close the backend terminal
-- Run: `.\start.ps1`
+Get keys at: https://console.anthropic.com/ or https://platform.openai.com/api-keys
 
-### 3. Try it out!
-Ask questions like:
+---
+
+## Step 4 — Start the App
+
+```powershell
+# Backend (from /backend)
+uvicorn app.main:app --reload
+
+# Frontend (from /frontend, separate terminal)
+npm install
+npm run dev
+```
+
+Or use the convenience scripts from the project root:
+```powershell
+.\start.ps1    # PowerShell
+start.bat      # CMD
+```
+
+Frontend: http://localhost:5173  
+API docs: http://localhost:8000/docs
+
+---
+
+## Sample Queries to Try
+
 - "Who are the top 5 customers by total spend?"
 - "Show me all pending orders"
 - "How many customers are from the USA?"
 - "What's the average order value by country?"
 
-## 📊 Sample Data
-The database now has:
-- **customers** table: 10 customers from different countries
-- **orders** table: 14 orders with various amounts and statuses
-
-## 🎯 Test Queries
 ```sql
--- Top customers by spend
-SELECT customer_name, SUM(total_amount) as total_revenue 
-FROM customers c JOIN orders o ON c.customer_id = o.customer_id 
-GROUP BY customer_name ORDER BY total_revenue DESC LIMIT 5;
+-- Top customers
+SELECT c.customer_name, SUM(o.total_amount) AS total_revenue
+FROM customers c JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_name ORDER BY total_revenue DESC LIMIT 5;
 
 -- Pending orders
 SELECT * FROM orders WHERE status = 'pending';
 
--- Orders by country
-SELECT country, COUNT(*) as order_count, SUM(total_amount) as total
+-- Revenue by country
+SELECT c.country, COUNT(*) AS order_count, SUM(o.total_amount) AS total
 FROM customers c JOIN orders o ON c.customer_id = o.customer_id
-GROUP BY country ORDER BY total DESC;
+GROUP BY c.country ORDER BY total DESC;
 ```
 
-## 🛠️ Troubleshooting
-- Backend not running? Check terminal for errors
-- Frontend disconnected? Ensure backend is on port 8000
-- No LLM response? Verify API key in .env and restart backend
-- Database errors? Run: `docker compose up -d db`
+---
 
-## 📁 Project Structure
-```
-backend/
-  app/
-    main.py          # FastAPI app + WebSocket
-    agent.py         # Reasoning agent with LLM
-    llm_service.py   # OpenAI/Anthropic integration
-    mcp_server.py    # Database bridge
-    config.py        # Settings
-frontend/
-  src/
-    App.jsx          # Chat interface
-```
+## Troubleshooting
 
-Enjoy exploring your database with natural language! 🚀
+| Problem | Fix |
+|---|---|
+| `(no tables)` in response | Re-run the seed script for your chosen DB |
+| `TryCast` import error | `pip install "sqlalchemy>=2.0.30"` |
+| `pg_collation` error | You're using DuckDB — this is fixed in `mcp_server.py` automatically |
+| Anthropic key warning | Check for a leading space in `ANTHROPIC_API_KEY=` in `.env` |
+| Backend not picking up `.env` | Ensure `.env` is in the `backend/` folder (or the project root — both are searched) |
+| DuckDB write-lock error | Close any other tool (DBeaver, CLI) that has the `.duckdb` file open with write access |
+| Database errors with Docker Postgres | Run: `docker compose --profile postgres up -d db` |

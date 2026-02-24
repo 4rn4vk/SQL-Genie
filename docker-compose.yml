@@ -1,8 +1,18 @@
 version: "3.9"
 
+# ---------------------------------------------------------------------------
+# Database back-ends
+# ---------------------------------------------------------------------------
+# SQLite  (default) — no extra service needed; the file is created on first run.
+# DuckDB  (default) — same; file-based, no service needed.
+# PostgreSQL        — activate with:  docker compose --profile postgres up
+# ---------------------------------------------------------------------------
+
 services:
+  # --- PostgreSQL (optional) -----------------------------------------------
   db:
     image: postgres:15
+    profiles: ["postgres"]
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -12,17 +22,21 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
 
+  # --- Backend ---------------------------------------------------------------
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/sql_genie
-    depends_on:
-      - db
+      # ── Pick ONE of the three lines below and comment out the others ──────
+      DATABASE_URL: sqlite:///./sql_genie.db          # SQLite  (default)
+      # DATABASE_URL: duckdb:///./sql_genie.duckdb    # DuckDB
+      # DATABASE_URL: postgresql://postgres:postgres@db:5432/sql_genie  # PostgreSQL
     ports:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
       - ./backend/requirements.txt:/app/requirements.txt
+      - db_files:/app/data   # persists SQLite / DuckDB files between restarts
 
 volumes:
-  db_data:
+  db_data:    # PostgreSQL data
+  db_files:   # SQLite / DuckDB file storage
