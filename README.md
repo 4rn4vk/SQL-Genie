@@ -35,7 +35,7 @@ python seed_duckdb.py
 uvicorn app.main:app --reload
 
 # 5. In a second terminal, start the frontend
-cd ..rontend
+cd ..frontend
 npm install
 npm run dev
 ```
